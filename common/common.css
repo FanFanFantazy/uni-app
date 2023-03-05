@@ -1,0 +1,83 @@
+
+/* components */
+text {
+	font-family: sans-serif,'myicon';
+	color: #28112B;
+	font-size: 14px
+}
+.long-text {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.placeholder {
+	color: #cccccc
+}
+.att-input {
+	background-color: #f7f7f7;
+	padding: 20rpx;
+	border-radius: 0rpx;
+	margin: 16rpx;
+}
+.att-textarea {
+	width: calc(100% - 72rpx);
+	background-color: #f7f7f7;
+	padding: 20rpx;
+	border-radius: 20rpx;
+	border: 1px solid #DCDFE6;
+	margin: 16rpx;
+}
+
+.icon-btn {
+	padding: 12rpx;
+	font-size: 14px;
+	color: #8DAA91;
+}
+
+.empty-end {
+	height: 200rpx;
+	text-align: center;
+	line-height: 200rpx;
+	color: #EBEEF5;
+}
+
+/* add */
+.add-btn {
+  margin: 16rpx;
+	height: 80rpx;
+	line-height: 80rpx;
+	text-align: center;
+	border-radius: 20rpx;
+	background-color: #8DAA91;
+	color: #fefefe;
+}
+.add-btn text {
+	color: #fefefe
+}
+.fixed-bottom {
+	background-color: #ffffff;
+	position: fixed;
+	bottom: 0;
+	width: 100%;
+}
+
+/* cancel btn */
+.cancel-btn {
+  margin: 16rpx;
+	height: 80rpx;
+	line-height: 80rpx;
+	text-align: center;
+	border-radius: 20rpx;
+	background-color: #eeeeeee;
+	color: #28112B;
+	border: 1px solid #DCDFE6;
+}
+/* like & dislike */
+.like {
+	color: #F56C6C;
+	font-weight: 600;
+}
+.dislike {
+	color: white;
+	font-weight: 600;
+}
