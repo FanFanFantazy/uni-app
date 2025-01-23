@@ -38,8 +38,7 @@
 			<view class="add-image" @click="uploadImage"><text class="icon-plus"></text></view>
 			<view class="task-image" v-for="(img, index) in imageList" :key="img.fileUrl">
 				<image :src="img.fileUrl" mode="aspectFill" @click="previewImage(img.fileUrl)"></image>
-				<text class="icon-bin icon-btn delete-image"
-				@click="deleteImage(img.fileUrl, img._id)"></text>
+				<text class="icon-bin icon-btn delete-image" @click="deleteImage(img.fileUrl, img._id, index)"></text>
 			</view>
 		</view>
 	</view>
@@ -148,6 +147,12 @@
 		new Media().delete([url]).then(res => {
 			imageTable.doc(_id).remove({}).then(res2 => {
 				imageList.value.splice(index, 1)
+			}).then(() => {
+				wx.cloud.deleteFile({fileList: [url]}).then(() => {
+					wx.showToast({title: '删除成功'})
+				}).catch(() => {
+					wx.showToast({title: '删除失败'})
+				})
 			}).finally(() => {
 				wx.hideLoading()
 			})

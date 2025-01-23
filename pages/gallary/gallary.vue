@@ -8,8 +8,11 @@
 				<text class="icon-camera"></text>
 			</view>
 			<view style="margin: 0 16rpx;">
-				<view class="index-image" v-for="(img, index) in imageList" :key="img.fileUrl">
-					<image class="main" :src="img.fileUrl" mode="aspectFill" @click="previewImage(img.fileUrl)"></image>
+				<view class="index-image" v-for="(img, index) in imageList" :key="img._id">
+					<view class="main" >
+						<image class="mini-image" :src="img.fileUrl" mode="aspectFill" @click="previewImage(img.fileUrl)"></image>
+						<text class="icon-bin icon-btn delete-image" @click="deleteImage(img.fileUrl, img._id, index)"></text>
+					</view>
 					<view style="margin-bottom: 16rpx;">
 						<view class="desc-text">Fly, bird, sing. Your song in tone-desert-bird! Hide it, you’re a fool,</view>
 						<view>
@@ -33,12 +36,13 @@
 
 <script setup>
 	import { onMounted, reactive, ref, toRefs, watch } from 'vue'
+	import {Media} from '@/common/common.js'
 	// user login
 	import Login from '@/pages/components/login.vue'
 	import { login_user } from '@/common/answer.js'
 	
 	onMounted(() => {
-			getImage()
+		getImage()
 	})
 
 	function checkUserLogin() {
@@ -83,6 +87,8 @@
 				})
 			}).catch(() => {
 				wx.hideLoading()
+			}).finally(() => {
+				getImage()
 			})
 		}
 
@@ -90,8 +96,19 @@
 
 	function getImage () {
 		wx.showLoading()
-		imageTable.orderBy('create_date', 'desc').get().then((res) => {
-			imageList.value = res.data.map(o => {return {fileUrl: o.cloud_path, ...o}})
+		// imageTable.orderBy('create_date', 'desc').get().then((res) => {
+		// 	imageList.value = res.data.map(o => {return {fileUrl: o.cloud_path, ...o}})
+		// }).finally(() => {
+		// 	wx.hideLoading()
+		// })
+		wx.cloud.callFunction({
+			name: 'media',
+			data: {
+				action: 'getImage',
+			}
+		}).then((res) => {
+			console.log(res.result)
+			imageList.value = res.result.data.map(o => {return {fileUrl: o.cloud_path, ...o}})
 		}).finally(() => {
 			wx.hideLoading()
 		})
@@ -118,6 +135,22 @@
 			return '1b+'
 		}
 	}
+	function deleteImage (url, _id, index) {
+		wx.showLoading()
+		new Media().delete([url]).then(res => {
+			imageTable.doc(_id).remove({}).then(res2 => {
+				imageList.value.splice(index, 1)
+			}).then(() => {
+				wx.cloud.deleteFile({fileList: [url]}).then(() => {
+					wx.showToast({title: '删除成功'})
+				}).catch(() => {
+					wx.showToast({title: '删除失败'})
+				})
+			}).finally(() => {
+				wx.hideLoading()
+			})
+		})
+	}
 </script>
 <style scoped>
 	.index-image {
@@ -131,6 +164,11 @@
 	.index-image .main {
 		width: 100%;
 		height: 500rpx;
+		position: relative;
+	}
+	.index-image .main .mini-image {
+		width: 100%;
+		height: 100%;
 		border-top-left-radius: 16rpx;
 		border-top-right-radius: 16rpx;
 	}
@@ -166,8 +204,9 @@
 		color: #909399;
 	}
 	.index-image .delete-image {
-		float: right;
-		margin-top: 20rpx;
+		position: absolute;
+		z-index: 10;
+		right: 0rpx;
 	}
 	.index-image .desc-text {
 		font-size: 12px;
