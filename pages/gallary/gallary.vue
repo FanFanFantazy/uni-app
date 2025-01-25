@@ -36,7 +36,7 @@
 
 <script setup>
 	import { onMounted, reactive, ref, toRefs, watch } from 'vue'
-	import {Media} from '@/common/common.js'
+	import { Media } from '@/common/common.js'
 	// user login
 	import Login from '@/pages/components/login.vue'
 	import { login_user } from '@/common/answer.js'
@@ -66,19 +66,24 @@
 	
 	// upload
 	function uploadImage () {
-		console.log(checkUserLogin())
 		if(checkUserLogin()) {
 			wx.showLoading()
 			new Media().open().then(res => {
 				 res.forEach(f => {
 					new Media().upload(f.tempFilePath, 'indexImage/').then(res2 => {
-						imageTable.add({data: {
-						  cloud_path: res2.fileID,
-							create_date: new Date(),
-							nick_name: wx.getStorageSync('user_info').nickName,
-							avatar_url: wx.getStorageSync('user_info').avatarUrl
-						}}).then(res3 => {
-							imageList.value.unshift({ fileUrl: res2.fileID, _id: res3._id, 
+						wx.cloud.callFunction({
+							name: 'media',
+							data: {
+								action: 'addImage',
+								data: {
+									fileID: res2.fileID,
+									nickName: wx.getStorageSync('user_info').nickName,
+									avatarUrl: wx.getStorageSync('user_info').avatarUrl
+								}
+							}
+						}).then(res3 => {
+							console.log("upload image response", res3)
+							imageList.value.unshift({ fileUrl: res2.fileID, _id: res3.result._id, 
 							nick_name: wx.getStorageSync('user_info').nickName, avatar_url: wx.getStorageSync('user_info').avatarUrl })
 						}).finally(() => {
 							wx.hideLoading()
@@ -96,18 +101,12 @@
 
 	function getImage () {
 		wx.showLoading()
-		// imageTable.orderBy('create_date', 'desc').get().then((res) => {
-		// 	imageList.value = res.data.map(o => {return {fileUrl: o.cloud_path, ...o}})
-		// }).finally(() => {
-		// 	wx.hideLoading()
-		// })
 		wx.cloud.callFunction({
 			name: 'media',
 			data: {
 				action: 'getImage',
 			}
 		}).then((res) => {
-			console.log(res.result)
 			imageList.value = res.result.data.map(o => {return {fileUrl: o.cloud_path, ...o}})
 		}).finally(() => {
 			wx.hideLoading()
@@ -138,14 +137,16 @@
 	function deleteImage (url, _id, index) {
 		wx.showLoading()
 		new Media().delete([url]).then(res => {
-			imageTable.doc(_id).remove({}).then(res2 => {
-				imageList.value.splice(index, 1)
+			wx.cloud.callFunction({
+				name: 'media',
+				data: {
+					action: 'deleteImage',
+					data: {
+						_id: _id
+					}
+				}
 			}).then(() => {
-				wx.cloud.deleteFile({fileList: [url]}).then(() => {
-					wx.showToast({title: '删除成功'})
-				}).catch(() => {
-					wx.showToast({title: '删除失败'})
-				})
+				imageList.value.splice(index, 1)
 			}).finally(() => {
 				wx.hideLoading()
 			})
