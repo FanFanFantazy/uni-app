@@ -56,8 +56,6 @@
 	// image operation
 
 	wx.cloud.init()
-	const db = wx.cloud.database()
-	const imageTable = db.collection('image')
 	const mainData = reactive({
 		imageList: [],
 		fuzzySearch: ''
@@ -82,9 +80,12 @@
 								}
 							}
 						}).then(res3 => {
-							console.log("upload image response", res3)
-							imageList.value.unshift({ fileUrl: res2.fileID, _id: res3.result._id, 
-							nick_name: wx.getStorageSync('user_info').nickName, avatar_url: wx.getStorageSync('user_info').avatarUrl })
+							imageList.value.unshift({ 
+								fileUrl: res2.fileID, 
+								_id: res3.result._id, 
+								nick_name: wx.getStorageSync('user_info').nickName, 
+								avatar_url: wx.getStorageSync('user_info').avatarUrl 
+							})
 						}).finally(() => {
 							wx.hideLoading()
 						})

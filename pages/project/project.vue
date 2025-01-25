@@ -60,7 +60,6 @@
 	// db
 	wx.cloud.init()
 	const db = wx.cloud.database()
-	const project = db.collection('project')
 	
 	// get main list and functions
 	const mainData = reactive({
@@ -74,9 +73,16 @@
 	function queryList () {
 		if (wx.getStorageSync('user_info')._openid) {
 			wx.showLoading()
-			let _openid = wx.getStorageSync('user_info')._openid
-			project.where({'_openid': _openid}).limit(10).skip(Math.floor(mainData.mainList.length/10) * 10).get().then(res => {
-				mainData.mainList = removeDuplicate([...mainData.mainList, ...res.data])
+			wx.cloud.callFunction({
+				name: 'project',
+				data: {
+					action: 'getProjectList',
+					data: {
+						pageNumber: Math.floor(mainData.mainList.length/10) * 10,
+					}
+				}
+			}).then(res => {
+				mainData.mainList = removeDuplicate([...mainData.mainList, ...res.result.data])
 			}).finally(() => {
 				wx.hideLoading()
 			})
@@ -91,13 +97,19 @@
 	function submitAdd () {
 		wx.showLoading()
 		let send = {
-		  name: mainData.editForm.name,
+		  	name: mainData.editForm.name,
 			desc: mainData.editForm.desc,
 			create_date: new Date(),
 			active: true,
-		}
-		project.add({data: send}).then(res => {
-			send._id = res._id
+		}		
+		wx.cloud.callFunction({
+			name: 'project',
+			data: {
+				action: 'addProject',
+				data: send
+			}
+		}).then(res => {
+			send._id = res.result._id
 			mainData.mainList.push(send)
 		}).finally(() => {
 			wx.hideLoading()
@@ -107,26 +119,37 @@
 	function clickoverlay(e) {
 		show.value = false
 	}
-	const task = db.collection('task')
 	function removeItem(item, index) {
 		wx.showLoading()
-		task.where({'project_id': item._id}).get().then(res => {
-		  if (res.data.length > 0) {
-				wx.hideLoading()
-				return wx.showToast({
-					title: 'Please remove task first',
-					icon: 'none',
-					duration: 2000
-				}) 
-		  } else {
-			 project.doc(item._id).remove({}).then(res => {
-				 mainData.mainList.splice(index, 1)
-			 }).finally(() => {
-				 wx.hideLoading()
-			 })
-		  }
+		wx.cloud.callFunction({
+			name: 'project',
+			data: {
+				action: 'countTask',
+				data: { 'projectId': item._id }
+			}
+		}).then(res => {
+			console.log("quey task list", res)
+			if (res.result.total > 0) {
+					wx.hideLoading()
+					return wx.showToast({
+						title: 'Please remove task first!',
+						icon: 'none',
+						duration: 2000
+					}) 
+			} else {
+				wx.cloud.callFunction({
+					name: 'project',
+					data: {
+						action: 'deleteProject',
+						data: { _id: item._id }
+					}
+				}).then(res => {
+					mainData.mainList.splice(index, 1)
+				}).finally(() => {
+					wx.hideLoading()
+				})
+			}
 		})
-
 	}
 	function navigatToItem (item) {
 		wx.navigateTo({
