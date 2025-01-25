@@ -72,7 +72,6 @@
   }
 	
 	import { onLoad } from '@dcloudio/uni-app'
-	const taskdb = db.collection('task')
 	
 	onLoad((e) => {
 		task._id = e.id
@@ -80,8 +79,14 @@
 	})
 	function queryTask () {
 		wx.showLoading()
-		taskdb.where({'_id': task._id}).get().then(res => {
-		  task.taskForm = res.data[0];
+		wx.cloud.callFunction({
+			name: 'project',
+			data: {
+				action: 'getTask',
+				data: { 'taskId': task._id }
+			}
+		}).then(res => {
+		  	task.taskForm = res.result.data;
 			getImage()
 		}).finally(() => {
 			wx.hideLoading()
@@ -89,11 +94,13 @@
 	}
 	function updateTask() {
 		let temp = task.taskForm
-		delete temp._openid
-		delete temp._id
 		wx.showLoading()
-		taskdb.where({'_id': task._id}).update({
-			data: temp
+		wx.cloud.callFunction({
+			name: 'project',
+			data: {
+				action: 'updateTask',
+				data: temp
+			}
 		}).finally(() => {
 			wx.hideLoading()
 		})
@@ -114,12 +121,17 @@
 		wx.showLoading()
 		new Media().open(9).then(res => {
 			new Media().upload(res[0].tempFilePath, 'taskImage/').then(res2 => {
-				imageTable.add({data: {
-				  cloud_path: res2.fileID,
-					create_date: new Date(),
-					task_id: task.taskForm._id
-				}}).then(res3 => {
-					imageList.value.unshift({ fileUrl: res2.fileID, _id: res3._id })
+				wx.cloud.callFunction({
+					name: 'project',
+					data: {
+						action: 'addTaskImage',
+						data: {
+							cloud_path: res2.fileID,
+							task_id: task.taskForm._id
+						}
+					}
+				}).then(res3 => {
+					imageList.value.unshift({ fileUrl: res2.fileID, _id: res3.result._id })
 				}).finally(() => {
 					wx.hideLoading()
 				})

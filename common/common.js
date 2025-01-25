@@ -100,30 +100,6 @@ class User {
 			})
 		})
 	}
-	// login() {
-	// 	return new Promise((resolve, reject) => {
-	// 		wx.getUserProfile({desc: '用于登录'}).then(async (res) => {
-	// 			const query_id = await userdb.get()
-	// 			if (query_id.data.length > 0) {
-	// 				const user = query_id.data[0]
-	// 				wx.setStorageSync('user_info', {avatarUrl: user.avatarUrl, nickName: user.nickName, _openid: user._openid})
-	// 			} else {
-	// 				await userdb.add({data: {
-	// 					avatarUrl: res.userInfo.avatarUrl, 
-	// 					nickName: res.userInfo.nickName, 
-	// 					watch_num: 1,
-	// 					pay: true
-	// 				}})
-	// 				const query = await userdb.get() 
-	// 				const user = query.data[0]
-	// 				wx.setStorageSync('user_info', {avatarUrl: user.avatarUrl, nickName: user.nickName, _openid: user._openid})
-	// 			}
-	// 			resolve('success')
-	// 		}).catch(err => {
-	// 			reject(err)
-	// 		})
-	// 	})
-	// }
 	logout() {
 		return new Promise((resolve, reject) => {
 			userdb.get().then(res => {
