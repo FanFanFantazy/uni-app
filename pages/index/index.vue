@@ -91,7 +91,6 @@
 	}
 	// project
 	function navigateProject () {
-		console.log(11111111)
 		wx.switchTab({
 			url: '/pages/project/project'
 		})

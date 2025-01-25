@@ -55,7 +55,6 @@
 	
 	// db
 	wx.cloud.init()
-	const db = wx.cloud.database()
 	// get main list and functions
 	const mainData = reactive({
 		mainList: [],
@@ -86,16 +85,20 @@
 			}
 		}).then(res => {
 			mainData.mainList = res.result.data
-			console.log(mainData.mainList)
 		}).finally(() => {
 			wx.hideLoading()
 		})
 	}
-	const imageTable = db.collection('task_image')
 	function removeItem(item, index) {
 		wx.showLoading()
-		imageTable.where({'task_id': item._id}).get().then((res) => {
-			if (res.data.length > 0) {
+		wx.cloud.callFunction({
+			name: 'project',
+			data: {
+				action: 'countTaskImage',
+				data: { 'taskId': item._id }
+			}
+		}).then((res) => {
+			if (res.result.total > 0) {
 				wx.hideLoading()
 				return wx.showToast({
 					title: '请先删除相关附件',
