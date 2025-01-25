@@ -128,14 +128,13 @@
 				data: { 'projectId': item._id }
 			}
 		}).then(res => {
-			console.log("quey task list", res)
 			if (res.result.total > 0) {
-					wx.hideLoading()
-					return wx.showToast({
-						title: 'Please remove task first!',
-						icon: 'none',
-						duration: 2000
-					}) 
+				wx.hideLoading()
+				return wx.showToast({
+					title: 'Please remove task first!',
+					icon: 'none',
+					duration: 2000
+				}) 
 			} else {
 				wx.cloud.callFunction({
 					name: 'project',

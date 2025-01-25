@@ -56,19 +56,17 @@
 	// db
 	wx.cloud.init()
 	const db = wx.cloud.database()
-	const task = db.collection('task')
-
 	// get main list and functions
 	const mainData = reactive({
 		mainList: [],
-		taskId: '',
+		projectId: '',
 		editForm: {},
 		typeOp: ['收入', '支出']
 	})
-	const {mainList, taskId, editForm, typeOp} = toRefs(mainData)
+	const {mainList, projectId, editForm, typeOp} = toRefs(mainData)
 	
 	onLoad((e) =>{
-		mainData.taskId = e.id
+		mainData.projectId = e.id
 	})
 	onShow(() => {
 		queryList()
@@ -80,12 +78,15 @@
 	
 	function queryList () {
 		wx.showLoading()
-		task.where({'project_id': mainData.taskId}).get().then(res => {
-		  let tempList = res.data;
-		  tempList.forEach(el => {
-		    el.date_span = ((new Date() - el.start_date)/ 1000/60/60 /24).toFixed();
-		  })
-			mainData.mainList = tempList
+		wx.cloud.callFunction({
+			name: 'project',
+			data: {
+				action: 'getTaskList',
+				data: { 'projectId': mainData.projectId }
+			}
+		}).then(res => {
+			mainData.mainList = res.result.data
+			console.log(mainData.mainList)
 		}).finally(() => {
 			wx.hideLoading()
 		})
@@ -102,7 +103,13 @@
 					duration: 2000
 				})
 			} else {
-				task.doc(item._id).remove({}).finally(() => {
+				wx.cloud.callFunction({
+					name: 'project',
+					data: {
+						action: 'deleteTask',
+						data: { _id: item._id }
+					}
+				}).finally(() => {
 					queryList()
 				})
 			}
@@ -121,16 +128,21 @@
 	}
 	function submitAdd () {
 		wx.showLoading()
-		task.add({data: {
-	    name: mainData.editForm.name,
-	    type: mainData.editForm.type,
-	    start_date: new Date(),
-	    est_payback: mainData.editForm.investment,
-	    act_payback: mainData.editForm.investment,
-	    investment: mainData.editForm.investment,
-			project_id: mainData.taskId,
-			desc: mainData.editForm.desc
-	  }}).finally(() => {
+		wx.cloud.callFunction({
+			name: 'project',
+			data: {
+				action: 'addTask',
+				data: {
+					name: mainData.editForm.name,
+					type: mainData.editForm.type,
+					est_payback: mainData.editForm.investment,
+					act_payback: mainData.editForm.investment,
+					investment: mainData.editForm.investment,
+					project_id: mainData.projectId,
+					desc: mainData.editForm.desc
+				}
+			}
+		}).finally(() => {
 			show.value = false
 			queryList()
 		})

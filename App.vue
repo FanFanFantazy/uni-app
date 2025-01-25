@@ -8,7 +8,7 @@
 				wx.cloud.init({
 					//env 云环境 ID
 					env: 'test-2geit0kxfc5c1e8e',
-					traceuser: true
+					traceUser: true
 				})
 			}
 		}
