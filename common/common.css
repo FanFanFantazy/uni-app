@@ -68,8 +68,19 @@ text {
 	line-height: 80rpx;
 	text-align: center;
 	border-radius: 20rpx;
-	background-color: #eeeeeee;
+	background-color: #eeeeee;
 	color: #28112B;
+	border: 1px solid #DCDFE6;
+}
+/* disable btn */
+.disable-btn {
+  margin: 16rpx;
+	height: 80rpx;
+	line-height: 80rpx;
+	text-align: center;
+	border-radius: 20rpx;
+	background-color: #eeeeee;
+	color: #DCDFE6;
 	border: 1px solid #DCDFE6;
 }
 /* like & dislike */

@@ -41,6 +41,7 @@
 			<view class="menu-item"><text class="icon-image menu-icon"></text>我的相册</view>
 			<view class="menu-item"><text class="icon-heart menu-icon"></text>我的收藏</view>
 			<view class="menu-item" @click="navigateProject"><text class="icon-list menu-icon"></text>我的笔记</view>
+			<view class="menu-item" @click="navigatDeepseek"><text class="icon-bubble menu-icon"></text>DeepSeek</view>
 			<view class="menu-item" @click="openlogout"><text class="icon-reply menu-icon"></text>退出登录</view>
 		</view>
 		<view v-else class="menu-item" @click="openLogin">重新登录</view>
@@ -93,6 +94,12 @@
 	function navigateProject () {
 		wx.switchTab({
 			url: '/pages/project/project'
+		})
+	}
+	// deepseek
+	function navigatDeepseek () {
+		wx.navigateTo({
+			url: '/pages/deepseek/conversation'
 		})
 	}
 	// usage
