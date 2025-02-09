@@ -4,7 +4,7 @@
 			<view v-for="(message, index) in messages" :key="index">
 				<view :class="'avatar ' + message.sender + '-avatar'"></view>
 				<text class="user-name long-text">{{message.sender}}</text>
-				<view :class="message.sender + ' chat-box'">{{ message.text }}</view>
+				<towxml :nodes="transToMd(message.text, 'markdown')"></towxml>
 			</view>
 			<view class="empty-space"></view>
 		</view>
@@ -20,6 +20,7 @@
 
 <script setup>
 	import { onMounted, reactive, ref, watch } from 'vue'
+	import { useTowxml } from '@/wxcomponents/towxml/index.js'
 	// user login
 	import { login_user } from '@/common/answer.js'
 	import Login from '@/pages/components/login.vue' 
@@ -46,6 +47,7 @@
 	const messages = reactive([])
 	const userInput = ref('')
 	const loading = ref(false)
+	const currentMsg = ref('')
 
 	// sendMessage
 	function sendMessage() {
@@ -56,40 +58,29 @@
 			wx.request({
 				url: 'https://api.deepseek.com/v1/chat/completions',
 				method: 'POST',
+				responseType: 'stream',
 				header: {
-					'Accept': 'application/json', 
 					'Content-Type': 'application/json',
 					'Authorization': 'Bearer sk-67adf783612143bb9cf3c2c083ac91d7'
 				},
 				data: {
 					messages: [{ role: "user", content: userInput.value }],
 					model: "deepseek-chat",
-					frequency_penalty: 0,
-					max_tokens: 2048,
-					presence_penalty: 0,
-					response_format: {
-						type: "text"
-					},
-					stop: null,
-					stream: false,
-					stream_options: null,
-					temperature: 1,
-					top_p: 1,
-					tools: null,
-					tool_choice: "none",
-					logprobs: false,
-					top_logprobs: null,
+					stream: true,
+                    max_tokens: 2048,
+                    temperature: 0.7,
+                    top_p: 0.7,
+                    top_k: 50,
+                    frequency_penalty: 0.5,
+                    n: 1,
 					timeout: 100000,
+                    response_format: {
+                        type: 'text'
+                    }
 				},
 				success: function(res) {
-					console.log(res)
-					let botMessage = ''
-					if (res.data.choices.length > 0) {
-						res.data.choices.forEach(el => {
-							botMessage += el.message.content
-						})
-					}
-					messages.push({ sender: 'bot', text: botMessage })
+					currentMsg.value = handleStream(res)
+					messages.push({ sender: 'bot', text: currentMsg.value })
 					userInput.value = ''
 				},
 				fail: function() {
@@ -103,7 +94,30 @@
 		}
 
 	}
-
+	// handleStream
+	function handleStream(res) {
+		let botMessage = ''
+		const lines = res.data.toString().split('\n');
+		for (const line of lines) {
+			if (line.trim() === '') continue;
+			if (line.trim() === 'data: [DONE]') continue;
+			if (line.startsWith('data: ')) {
+				try {
+					const json = JSON.parse(line.slice(6));
+					if (json.choices[0].delta.content) {
+						botMessage += json.choices[0].delta.content;
+					}
+				} catch (e) {
+					continue;
+				}
+			}
+		}
+		return botMessage
+	}
+	// markdown
+	function transToMd(content, type) {
+		return useTowxml(content.toString(), type)
+	}
 
 </script>
 <style scoped>
@@ -116,14 +130,6 @@
 }
 .bot {
   color: #67C23A;
-}
-.chat-box{
-	padding: 16rpx;
-    border: 1rpx solid #eeeeee;
-    border-radius: 16rpx;
-	margin: 16rpx 0;
-	word-break: break-word;
-	white-space: break-spaces;
 }
 .chat-input {
     bottom: 0;

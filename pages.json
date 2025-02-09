@@ -33,7 +33,10 @@
 		{
 			"path": "pages/deepseek/conversation",
 			"style": {
-				"navigationBarTitleText": "DeepSeek"
+				"navigationBarTitleText": "DeepSeek",
+				"usingComponents": {
+					"towxml": "/wxcomponents/towxml/towxml"
+				}
 			}
 		}
 	],
