@@ -11,7 +11,7 @@
 
 .h2w__main {
     margin: 16rpx 0;
-    padding: 32rpx;
+    padding: 0 32rpx;
     border: 1rpx solid #eeeeee;
     border-radius: 16rpx;
 }

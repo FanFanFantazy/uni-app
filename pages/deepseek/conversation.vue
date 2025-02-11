@@ -2,9 +2,9 @@
 	<view>
 		<view class="chat-container">
 			<view v-for="(message, index) in messages" :key="index">
-				<view :class="'avatar ' + message.sender + '-avatar'"></view>
-				<text class="user-name long-text">{{message.sender}}</text>
-				<towxml :nodes="transToMd(message.text, 'markdown')"></towxml>
+				<view :class="'avatar ' + message.role + '-avatar'"></view>
+				<text class="user-name long-text">{{message.role}}</text>
+					<towxml :nodes="transToMd(message.content, 'markdown')"></towxml>
 			</view>
 			<view class="empty-space"></view>
 		</view>
@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-	import { onMounted, reactive, ref, watch } from 'vue'
+	import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 	import { useTowxml } from '@/wxcomponents/towxml/index.js'
 	// user login
 	import { login_user } from '@/common/answer.js'
@@ -32,6 +32,14 @@
 			getProjectList()
 		}
 	})
+	let timer = null
+	onUnmounted(() => {
+		if (timer) {
+			clearTimeout(timer)
+			timer = null
+		}
+	})
+
 	watch(() => login_user.response, (newVal, oldVal) => {
 		user.value = newVal
 		getProjectList()
@@ -47,14 +55,14 @@
 	const messages = reactive([])
 	const userInput = ref('')
 	const loading = ref(false)
-	const currentMsg = ref('')
+	
 
 	// sendMessage
 	function sendMessage() {
 		if (!loading.value && userInput.value) {
 			wx.showLoading()
 			loading.value = true
-			messages.push({ sender: 'user', text: userInput.value })
+			messages.push({ role: 'user', content: userInput.value })
 			wx.request({
 				url: 'https://api.deepseek.com/v1/chat/completions',
 				method: 'POST',
@@ -63,12 +71,13 @@
 					'Content-Type': 'application/json',
 					'Authorization': 'Bearer sk-67adf783612143bb9cf3c2c083ac91d7'
 				},
+				timeout: 100000,
 				data: {
-					messages: [{ role: "user", content: userInput.value }],
+					messages: pickConversation(),
 					model: "deepseek-chat",
 					stream: true,
-                    max_tokens: 2048,
-                    temperature: 0.7,
+                    max_tokens: 1024,
+                    temperature: 1.3,
                     top_p: 0.7,
                     top_k: 50,
                     frequency_penalty: 0.5,
@@ -79,12 +88,12 @@
                     }
 				},
 				success: function(res) {
-					currentMsg.value = handleStream(res)
-					messages.push({ sender: 'bot', text: currentMsg.value })
+					messages.push({ role: 'assistant', content: '' })
+					handleStream(res)
 					userInput.value = ''
 				},
 				fail: function() {
-					messages.push({ sender: 'bot', text: 'Sorry, please try again' })
+					messages.push({ role: 'assistant', content: 'Sorry, please try again' })
 				},
 				complete: function() {
 					wx.hideLoading()
@@ -96,28 +105,33 @@
 	}
 	// handleStream
 	function handleStream(res) {
-		let botMessage = ''
+		messages[messages.length - 1].content = ''
 		const lines = res.data.toString().split('\n');
-		for (const line of lines) {
-			if (line.trim() === '') continue;
-			if (line.trim() === 'data: [DONE]') continue;
-			if (line.startsWith('data: ')) {
-				try {
-					const json = JSON.parse(line.slice(6));
-					if (json.choices[0].delta.content) {
-						botMessage += json.choices[0].delta.content;
+		for (let i = 0; i < lines.length; i++) {
+			setTimeout(() => {
+				if (lines[i].trim() !== 'data: [DONE]' && lines[i].startsWith('data: ')) {
+					const json = JSON.parse(lines[i].slice(6)) || null
+					if (json && json.choices[0].delta.content) {
+						messages[messages.length - 1].content += json.choices[0].delta.content;
 					}
-				} catch (e) {
-					continue;
 				}
-			}
+			}, 50 * i)
 		}
-		return botMessage
 	}
 	// markdown
 	function transToMd(content, type) {
 		return useTowxml(content.toString(), type)
 	}
+	// pickConversation
+	function pickConversation() {
+		const conversation = messages.filter((msg) => msg.content !== 'Sorry, please try again')
+		if (messages.length > 50) {
+			return conversation.slice(-50)
+		}
+		return conversation
+	}
+
+	
 
 </script>
 <style scoped>
@@ -128,7 +142,7 @@
 .user {
   color: #409EFF;
 }
-.bot {
+.assistant {
   color: #67C23A;
 }
 .chat-input {
@@ -154,7 +168,7 @@
 .user-avatar {
 	background-color: #409EFF;
 }
-.bot-avatar {
+.assistant-avatar {
 	background-color: #67C23A;
 }
 .user-name {
