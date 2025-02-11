@@ -110,6 +110,10 @@
 			})
 			chunkRequest.onChunkReceived((res) => {
 				handleStream({data: handleChunk(res)})
+				if (messages[messages.length - 1].content.trim() !== '') {
+					wx.hideLoading()
+					loading.value = false
+				}
 			})
 		}
 
@@ -149,7 +153,7 @@
 				if (lines[i].trim() !== 'data: [DONE]' && lines[i].startsWith('data: ')) {
 					const json = JSON.parse(lines[i].slice(6)) || null
 					if (json && json.choices[0].delta.content) {
-						messages[messages.length - 1].content += json.choices[0].delta.content;
+						messages[messages.length - 1].content += json.choices[0].delta.content
 					}
 				}
 				// if (i === lines.length - 1 && messages[messages.length - 1].content.trim() === '') {
