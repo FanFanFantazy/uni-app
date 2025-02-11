@@ -55,6 +55,7 @@
 	const messages = reactive([])
 	const userInput = ref('')
 	const loading = ref(false)
+	let lastData = new Uint8Array()
 	
 
 	// sendMessage
@@ -63,15 +64,15 @@
 			wx.showLoading()
 			loading.value = true
 			messages.push({ role: 'user', content: userInput.value })
-			wx.request({
+			const chunkRequest = wx.request({
 				url: 'https://api.deepseek.com/v1/chat/completions',
 				method: 'POST',
-				responseType: 'stream',
 				header: {
 					'Content-Type': 'application/json',
 					'Authorization': 'Bearer sk-67adf783612143bb9cf3c2c083ac91d7'
 				},
 				timeout: 100000,
+				enableChunked: true,
 				data: {
 					messages: pickConversation(),
 					model: "deepseek-chat",
@@ -87,39 +88,74 @@
                         type: 'text'
                     }
 				},
-				success: function(res) {
-					messages.push({ role: 'assistant', content: '' })
-					handleStream(res)
-					userInput.value = ''
-				},
+				// success: function(res) {
+				// 	messages.push({ role: 'assistant', content: '' })
+				// 	handleStream(res)
+				// 	userInput.value = ''
+				// },
 				fail: function() {
 					messages.push({ role: 'assistant', content: 'Sorry, network busy, please try again' })
 				},
 				complete: function() {
+					if (messages[messages.length - 1].content.trim() === '') {
+						messages[messages.length - 1].content = 'Sorry, network busy, please try again'
+					}
 					wx.hideLoading()
 					loading.value = false
 				}
 			})
+			chunkRequest.onHeadersReceived(() => {
+				messages.push({ role: 'assistant', content: '' })
+				userInput.value = ''
+			})
+			chunkRequest.onChunkReceived((res) => {
+				handleStream({data: handleChunk(res)})
+			})
 		}
 
 	}
+	function handleChunk (res) {
+		let data = res.data;
+		// 兼容处理,真机返回的的是 ArrayBuffer
+		if (data instanceof ArrayBuffer) {
+			data = new Uint8Array(data)
+		}
+		let text = data
+		// Uint8Array转码
+		if (typeof data != 'string') {
+		// 兼容处理  微信小程序不支持TextEncoder/TextDecoder
+			try {
+				console.log('lastData', lastData)
+				text = decodeURIComponent(escape(String.fromCharCode(...lastData, ...data)))
+				lastData = new Uint8Array()
+			} catch (error) {
+				text = ''
+				console.log('解码异常', data)
+				// Uint8Array 拼接
+				let swap = new Uint8Array(lastData.length + data.length)
+				swap.set(lastData, 0)
+				swap.set(data, lastData.length)
+				lastData = swap
+			}
+		}
+		return text
+	}
 	// handleStream
 	function handleStream(res) {
-		messages[messages.length - 1].content = ''
+		// messages[messages.length - 1].content = ''
 		const lines = res.data.toString().split('\n');
-		console.log(res.data, lines)
 		for (let i = 0; i < lines.length; i++) {
-			setTimeout(() => {
+			// setTimeout(() => {
 				if (lines[i].trim() !== 'data: [DONE]' && lines[i].startsWith('data: ')) {
 					const json = JSON.parse(lines[i].slice(6)) || null
 					if (json && json.choices[0].delta.content) {
 						messages[messages.length - 1].content += json.choices[0].delta.content;
 					}
 				}
-				if (i === lines.length - 1 && messages[messages.length - 1].content.trim() === '') {
-					messages[messages.length - 1].content = 'Sorry, network busy, please try again'
-				}
-			}, 50 * i)
+				// if (i === lines.length - 1 && messages[messages.length - 1].content.trim() === '') {
+				// 	messages[messages.length - 1].content = 'Sorry, network busy, please try again'
+				// }
+			// }, 50 * i)
 		}
 	}
 	// markdown
