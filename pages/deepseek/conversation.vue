@@ -77,7 +77,7 @@
 					model: "deepseek-chat",
 					stream: true,
                     max_tokens: 1024,
-                    temperature: 1.3,
+                    temperature: 0.7,
                     top_p: 0.7,
                     top_k: 50,
                     frequency_penalty: 0.5,
@@ -93,7 +93,7 @@
 					userInput.value = ''
 				},
 				fail: function() {
-					messages.push({ role: 'assistant', content: 'Sorry, please try again' })
+					messages.push({ role: 'assistant', content: 'Sorry, network busy, please try again' })
 				},
 				complete: function() {
 					wx.hideLoading()
@@ -107,6 +107,7 @@
 	function handleStream(res) {
 		messages[messages.length - 1].content = ''
 		const lines = res.data.toString().split('\n');
+		console.log(res.data, lines)
 		for (let i = 0; i < lines.length; i++) {
 			setTimeout(() => {
 				if (lines[i].trim() !== 'data: [DONE]' && lines[i].startsWith('data: ')) {
@@ -114,6 +115,9 @@
 					if (json && json.choices[0].delta.content) {
 						messages[messages.length - 1].content += json.choices[0].delta.content;
 					}
+				}
+				if (i === lines.length - 1 && messages[messages.length - 1].content.trim() === '') {
+					messages[messages.length - 1].content = 'Sorry, network busy, please try again'
 				}
 			}, 50 * i)
 		}
@@ -124,9 +128,9 @@
 	}
 	// pickConversation
 	function pickConversation() {
-		const conversation = messages.filter((msg) => msg.content !== 'Sorry, please try again')
-		if (messages.length > 50) {
-			return conversation.slice(-50)
+		const conversation = messages.filter((msg) => msg.content !== 'Sorry, network busy, please try again')
+		if (messages.length > 10) {
+			return conversation.slice(-10)
 		}
 		return conversation
 	}
